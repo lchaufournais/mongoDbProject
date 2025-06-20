@@ -26,4 +26,23 @@ offers.get('/', async (c) => {
   return c.json(data);
 });
 
+offers.post('/', async (c) => {
+  const body = await c.req.json();
+  const { from, to, provider, price, currency, legs } = body;
+  if (!from || !to) return c.text("Missing from or to", 400);
+
+  const mongo = await getMongoClient();
+  const result = await mongo.db().collection('offers').insertOne({
+    from, to, provider, price, currency, legs
+  });
+
+  const redis = await getRedisClient();
+  await redis.publish(
+    'offers:new',
+    JSON.stringify({ offerId: result.insertedId.toString(), from, to })
+  );
+
+  return c.json({ insertedId: result.insertedId });
+});
+
 export default offers;
