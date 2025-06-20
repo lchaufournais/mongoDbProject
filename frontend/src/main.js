@@ -20,7 +20,7 @@ function clearSelectFilerReco(){
 }
 
 function clearOfferResult(){
-  form.classList.toggle('hidden')
+  form.classList.add('hidden')
 }
 
 async function login() {
@@ -42,7 +42,6 @@ async function login() {
 
 async function loadOffers() {
   clearOutput()
-  clearOfferResult()
   clearSelectFilerReco()
   const from = document.getElementById("selectFrom").value
   const to = document.getElementById("selectTo").value
@@ -102,7 +101,6 @@ async function loadOffers() {
 async function loadReco() {
   clearOutput()
   clearSelectFilerOffer()
-  clearOfferResult()
   const city = document.getElementById("selectRecoCity")?.value || "PAR"
 
   if (!city) {

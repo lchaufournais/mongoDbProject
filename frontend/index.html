@@ -96,21 +96,25 @@
     }
 
     function showOfferFilters(){
+      const form = document.getElementById("formContainer")
       const filters = document.getElementById("offerFilters")
       const output = document.getElementById("output")
       const recos = document.getElementById("recoFilters")
       output.innerHTML = ""
       filters.classList.remove("hidden")
       recos.classList.add('hidden')
+      form.classList.add("hidden")
     }
 
     function showRecoFilters(){
+      const form = document.getElementById("formContainer")
       const recos = document.getElementById("recoFilters")
       const filters = document.getElementById("offerFilters")
       const output = document.getElementById("output")
       output.innerHTML = ""
       filters.classList.add("hidden")
       recos.classList.remove("hidden")
+      form.classList.add("hidden")
     }
   </script>
 </body>
