@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { getMongoClient } from './mongoClient.js';
 import { getRedisClient } from './redisClient.js';
+import { ObjectId } from 'mongodb'
+import { getNeo4jDriver } from './neo4jClient.js'
 
 const offers = new Hono();
 
@@ -44,5 +46,57 @@ offers.post('/', async (c) => {
 
   return c.json({ insertedId: result.insertedId });
 });
+
+offers.get('/:id', async (c) => {
+  const id = c.req.param('id')
+
+  if (!ObjectId.isValid(id)) return c.text('Invalid offer ID', 400)
+
+  const redis = await getRedisClient()
+  const cacheKey = `offers:${id}`
+  const cached = await redis.get(cacheKey)
+  if (cached) return c.json(JSON.parse(cached))
+
+  const mongo = await getMongoClient()
+  const offer = await mongo.db().collection('offers').findOne({ _id: new ObjectId(id) })
+  if (!offer) return c.text('Offer not found', 404)
+
+  // Rechercher les villes proches via Neo4j
+  const driver = getNeo4jDriver()
+  const session = driver.session()
+
+  try {
+    const result = await session.run(
+      `MATCH (c:City {code: $to})-[:NEAR]->(n:City)
+       RETURN n.code AS code LIMIT 5`,
+      { to: offer.to }
+    )
+    const nearbyCities = result.records.map(r => r.get('code'))
+
+    // Requête MongoDB pour trouver des offres similaires
+    const related = await mongo.db().collection('offers').find({
+      from: offer.from,
+      to: { $in: nearbyCities },
+      departDate: { $gte: offer.departDate, $lte: offer.returnDate },
+      _id: { $ne: offer._id } // exclure l’offre elle-même
+    })
+      .project({ _id: 1 })
+      .limit(3)
+      .toArray()
+
+    const relatedOffers = related.map(o => o._id.toString())
+    offer.relatedOffers = relatedOffers
+
+    // Cache résultat
+    await redis.setEx(cacheKey, 300, JSON.stringify(offer))
+
+    return c.json(offer)
+  } catch (err: any) {
+    return c.text(`Erreur Neo4j : ${err.message}`, 500)
+  } finally {
+    await session.close()
+    await driver.close()
+  }
+})
 
 export default offers;

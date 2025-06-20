@@ -61,7 +61,7 @@ async function loadOffers() {
     }
 
     const tableRows = offers.map(offer => `
-      <tr class="border-b">
+     <tr class="border-b hover:bg-gray-100 cursor-pointer" onclick="loadOfferDetails('${offer._id}')">
         <td class="px-4 py-2">${offer.from}</td>
         <td class="px-4 py-2">${offer.to}</td>
         <td class="px-4 py-2">${offer.provider}</td>
@@ -168,6 +168,36 @@ async function addOffer(e) {
   }
 }
 
+async function loadOfferDetails(id) {
+  try {
+    const res = await axios.get(`http://localhost:3000/offers/${id}`)
+    const offer = res.data
+
+    const content = `
+      <h2 class="text-xl font-bold mb-2 text-blue-700">Détail de l'offre</h2>
+      <p><strong>De :</strong> ${offer.from}</p>
+      <p><strong>À :</strong> ${offer.to}</p>
+      <p><strong>Fournisseur :</strong> ${offer.provider}</p>
+      <p><strong>Prix :</strong> ${offer.price} ${offer.currency}</p>
+      <p><strong>Vols :</strong> ${JSON.stringify(offer.legs)}</p>
+      <p><strong>Hôtel :</strong> ${offer.hotel?.name || '—'}</p>
+      <p><strong>Activité :</strong> ${offer.activity?.title || '—'}</p>
+      <p><strong>Offres similaires :</strong></p>
+      <ul class="list-disc ml-4">
+        ${offer.relatedOffers?.map(id => `<li>${id}</li>`).join("") || "<li>Aucune</li>"}
+      </ul>
+    `
+
+    const modal = document.getElementById("modal")
+    const modalContent = document.getElementById("modalContent")
+    modalContent.innerHTML = content
+    modal.classList.remove("hidden")
+  } catch (err) {
+    alert("Erreur lors du chargement de l'offre : " + err.message)
+  }
+}
+
+window.loadOfferDetails = loadOfferDetails
 window.login = login
 window.loadOffers = loadOffers
 window.loadReco = loadReco
