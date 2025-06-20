@@ -13,6 +13,17 @@
     <button onclick="login()">Connexion</button>
   </div>
   <pre id="output">Résultats ici</pre>
+  <h2>Créer une offre</h2>
+  <form id="offerForm">
+    <input name="from" placeholder="From (ex: PAR)" required>
+    <input name="to" placeholder="To (ex: TYO)" required>
+    <input name="provider" placeholder="Provider" required>
+    <input name="price" type="number" placeholder="Price" required>
+    <input name="currency" placeholder="Currency" required>
+    <input name="legs" placeholder="Legs (JSON array)" required>
+    <button type="submit">Créer</button>
+  </form>
+  <pre id="offerResult"></pre>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
