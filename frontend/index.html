@@ -1,29 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SupDeVinci Travel Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>SupDeVinci Travel Hub</h1>
-  <div>
-    <button onclick="loadOffers()">Charger les offres</button>
-    <button onclick="loadReco()">Recommandations</button>
-    <button onclick="login()">Connexion</button>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-4xl space-y-8">
+    <h1 class="text-4xl font-bold text-center text-blue-700">SupDeVinci Travel Hub</h1>
+
+    <div class="flex flex-wrap justify-center gap-4">
+      <button onclick="login()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl shadow">Connexion</button>
+      <button onclick="showOfferFilters()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl shadow">
+        Voir les offres
+      </button>
+      <button onclick="showRecoFilters()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-xl shadow">
+        Recommandations
+      </button>
+      <button onclick="toggleForm()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2 rounded-xl shadow">Créer une offre</button>
+    </div>
+
+    <div id="offerFilters" class="bg-white p-4 rounded-lg shadow space-y-4 hidden mt-4">
+      <h2 class="text-lg font-semibold text-green-700">Filtrer les offres</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <select id="selectFrom" class="p-2 border rounded">
+          <option value="">Départ</option>
+          <option value="PAR">PAR (Paris)</option>
+          <option value="TYO">TYO (Tokyo)</option>
+          <option value="NYC">NYC (New York)</option>
+          <option value="LON">LON (Londres)</option>
+        </select>
+        <select id="selectTo" class="p-2 border rounded">
+          <option value="">Destination</option>
+          <option value="PAR">PAR (Paris)</option>
+          <option value="TYO">TYO (Tokyo)</option>
+          <option value="NYC">NYC (New York)</option>
+          <option value="LON">LON (Londres)</option>
+        </select>
+      </div>
+      <button onclick="loadOffers()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-xl shadow mt-2">
+        Filtrer
+      </button>
+    </div>
+
+    <div id="recoFilters" class="bg-white p-4 rounded-lg shadow space-y-4 hidden mt-4">
+      <h2 class="text-lg font-semibold text-purple-700">Filtrer les recommandations</h2>
+      <select id="selectRecoCity" class="p-2 border rounded w-full">
+        <option value="">Choisissez une ville</option>
+        <option value="PAR">PAR (Paris)</option>
+        <option value="TYO">TYO (Tokyo)</option>
+        <option value="NYC">NYC (New York)</option>
+        <option value="LON">LON (Londres)</option>
+      </select>
+      <button onclick="loadReco()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-xl shadow">
+        Filtrer
+      </button>
+    </div>
+
+    <div id="output" class="bg-white p-6 rounded-lg shadow space-y-4">
+      <p class="text-gray-500">Cliquez sur un bouton pour voir les résultats…</p>
+    </div>
+
+
+    <div id="formContainer" class="bg-white p-6 rounded-lg shadow hidden">
+      <h2 class="text-xl font-semibold mb-4 text-yellow-700">Nouvelle offre</h2>
+      <form id="offerForm" class="space-y-4" onsubmit="addOffer(event)">
+        <div class="grid grid-cols-2 gap-4">
+          <input name="from" placeholder="From (ex: PAR)" required class="p-2 border rounded">
+          <input name="to" placeholder="To (ex: TYO)" required class="p-2 border rounded">
+          <input name="provider" placeholder="Provider" required class="p-2 border rounded">
+          <input name="price" type="number" placeholder="Price" required class="p-2 border rounded">
+          <input name="currency" placeholder="Currency" required class="p-2 border rounded">
+          <input name="legs" placeholder='Legs JSON (ex: [{"flightNum":"AZ123"}])' required class="p-2 border rounded col-span-2">
+        </div>
+        <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded shadow">Ajouter l'offre</button>
+      </form>
+      <pre id="offerResult" class="mt-4 bg-gray-100 p-4 rounded text-sm"></pre>
+    </div>
   </div>
-  <pre id="output">Résultats ici</pre>
-  <h2>Créer une offre</h2>
-  <form id="offerForm">
-    <input name="from" placeholder="From (ex: PAR)" required>
-    <input name="to" placeholder="To (ex: TYO)" required>
-    <input name="provider" placeholder="Provider" required>
-    <input name="price" type="number" placeholder="Price" required>
-    <input name="currency" placeholder="Currency" required>
-    <input name="legs" placeholder="Legs (JSON array)" required>
-    <button type="submit">Créer</button>
-  </form>
-  <pre id="offerResult"></pre>
-  <script type="module" src="/src/main.js"></script>
+
+  <script type="module" src="src/main.js"></script>
+
+  <script>
+    function toggleForm() {
+      const form = document.getElementById("formContainer")
+      form.classList.toggle("hidden")
+      const filters = document.getElementById("offerFilters")
+      const output = document.getElementById("output")
+      const recos = document.getElementById("recoFilters")
+      output.innerHTML = ""
+      filters.classList.add("hidden")
+      recos.classList.add('hidden')
+
+    }
+
+    function showOfferFilters(){
+      const filters = document.getElementById("offerFilters")
+      const output = document.getElementById("output")
+      const recos = document.getElementById("recoFilters")
+      output.innerHTML = ""
+      filters.classList.remove("hidden")
+      recos.classList.add('hidden')
+    }
+
+    function showRecoFilters(){
+      const recos = document.getElementById("recoFilters")
+      const filters = document.getElementById("offerFilters")
+      const output = document.getElementById("output")
+      output.innerHTML = ""
+      filters.classList.add("hidden")
+      recos.classList.remove("hidden")
+    }
+  </script>
 </body>
 </html>

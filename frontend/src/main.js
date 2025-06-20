@@ -1,64 +1,176 @@
-import axios from "axios";
+import axios from "axios"
 
-const output = document.getElementById("output");
+const output = document.getElementById("output")
+const offerResult = document.getElementById("offerResult")
+const offerFilters = document.getElementById("offerFilters")
+const form = document.getElementById("formContainer")
+const recos = document.getElementById("recoFilters")
 
-window.loadOffers = async () => {
+
+function clearOutput() {
+  output.innerHTML = ""
+}
+
+function clearSelectFilerOffer(){
+  offerFilters.classList.add('hidden')
+}
+
+function clearSelectFilerReco(){
+  recos.classList.add('hidden')
+}
+
+function clearOfferResult(){
+  form.classList.toggle('hidden')
+}
+
+async function login() {
+  clearOutput()
+  clearSelectFilerOffer()
+  clearOfferResult()
+  clearSelectFilerReco()
   try {
-    const res = await axios.get(
-      "http://localhost:3000/offers?from=PAR&to=TYO&limit=1"
-    );
-    output.textContent = JSON.stringify(res.data, null, 2);
+    const res = await axios.post("http://localhost:3000/login", { userId: "u42" })
+    output.innerHTML = `
+      <h2 class="text-lg font-semibold text-blue-700">Connexion réussie</h2>
+      <p><strong>Token :</strong> <code class="bg-gray-100 px-2 py-1 rounded">${res.data.token}</code></p>
+      <p><strong>Expire dans :</strong> ${res.data.expires_in} secondes</p>
+    `
   } catch (err) {
-    output.textContent = "Erreur lors du chargement des offres: " + err.message;
+    output.innerHTML = `<p class="text-red-600">Erreur de connexion : ${err.message}</p>`
   }
-};
+}
 
-window.loadReco = async () => {
+async function loadOffers() {
+  clearOutput()
+  clearOfferResult()
+  clearSelectFilerReco()
+  const from = document.getElementById("selectFrom").value
+  const to = document.getElementById("selectTo").value
+
+  if (!from || !to) {
+    output.innerHTML = `<p class="text-red-600">Veuillez sélectionner un départ et une destination.</p>`
+    return
+  }
+
   try {
-    const res = await axios.get("http://localhost:3000/reco?city=PAR&k=1");
-    output.textContent = "Recommandations : " + JSON.stringify(res.data);
-  } catch (err) {
-    output.textContent =
-      "Erreur lors du chargement des recommandations: " + err.message;
-  }
-};
+    const res = await axios.get(`http://localhost:3000/offers?from=${from}&to=${to}&limit=10`)
+    const offers = res.data
 
-window.login = async () => {
+    if (!offers.length) {
+      output.innerHTML = `<p class="text-gray-600">Aucune offre trouvée pour ${from} → ${to}.</p>`
+      return
+    }
+
+    const tableRows = offers.map(offer => `
+      <tr class="border-b">
+        <td class="px-4 py-2">${offer.from}</td>
+        <td class="px-4 py-2">${offer.to}</td>
+        <td class="px-4 py-2">${offer.provider}</td>
+        <td class="px-4 py-2">${offer.price} ${offer.currency}</td>
+        <td class="px-4 py-2">${offer.legs?.length || 0}</td>
+        <td class="px-4 py-2">${offer.hotel?.name || '—'}</td>
+        <td class="px-4 py-2">${offer.activity?.title || '—'}</td>
+      </tr>
+    `).join("")
+
+    output.innerHTML = `
+      <h2 class="text-lg font-semibold text-green-700">Offres ${from} → ${to}</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border border-gray-300 rounded">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left">De</th>
+              <th class="px-4 py-2 text-left">À</th>
+              <th class="px-4 py-2 text-left">Fournisseur</th>
+              <th class="px-4 py-2 text-left">Prix</th>
+              <th class="px-4 py-2 text-left">Vols</th>
+              <th class="px-4 py-2 text-left">Hôtel</th>
+              <th class="px-4 py-2 text-left">Activité</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `
+  } catch (err) {
+    output.innerHTML = `<p class="text-red-600">Erreur lors du chargement des offres : ${err.message}</p>`
+  }
+}
+
+async function loadReco() {
+  clearOutput()
+  clearSelectFilerOffer()
+  clearOfferResult()
+  const city = document.getElementById("selectRecoCity")?.value || "PAR"
+
+  if (!city) {
+    output.innerHTML = `<p class="text-red-600">Veuillez sélectionner une ville.</p>`
+    return
+  }
+
   try {
-    const res = await axios.post("http://localhost:3000/login", {
-      userId: "u42",
-    });
-    output.textContent =
-      "Token : " +
-      res.data.token +
-      " (expire dans " +
-      res.data.expires_in +
-      "s)";
-  } catch (err) {
-    output.textContent = "Erreur de connexion: " + err.message;
-  }
-};
+    const res = await axios.get(`http://localhost:3000/reco?city=${city}&k=3`)
+    const cities = res.data
 
-document.getElementById("offerForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const data = {
-    from: form.from.value,
-    to: form.to.value,
-    provider: form.provider.value,
-    price: Number(form.price.value),
-    currency: form.currency.value,
-    legs: JSON.parse(form.legs.value),
-  };
-  const res = await fetch("http://localhost:3000/offers", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  const result = await res.json();
-  document.getElementById("offerResult").textContent = JSON.stringify(
-    result,
-    null,
-    2
-  );
-};
+    if (!cities.length) {
+      output.innerHTML = `<p class="text-gray-600">Aucune recommandation trouvée.</p>`
+      return
+    }
+
+    const listItems = cities.map(city => `
+      <li class="bg-purple-100 text-purple-800 px-4 py-2 rounded mb-2">${city.city} (score: ${city.score ?? "?"})</li>
+    `).join("")
+
+    output.innerHTML = `
+      <h2 class="text-lg font-semibold text-purple-700">Recommandations depuis ${city}</h2>
+      <ul class="list-none">${listItems}</ul>
+    `
+  } catch (err) {
+    output.innerHTML = `<p class="text-red-600">Erreur lors du chargement des recommandations : ${err.message}</p>`
+  }
+}
+
+async function addOffer(e) {
+  e.preventDefault()
+  clearOutput()
+  clearSelectFilerOffer()
+  clearSelectFilerReco()
+  offerResult.innerHTML = ""
+
+  const form = e.target
+  const from = form.from.value
+  const to = form.to.value
+  const provider = form.provider.value
+  const price = Number(form.price.value)
+  const currency = form.currency.value
+  let legs
+
+  try {
+    legs = JSON.parse(form.legs.value)
+    if (!Array.isArray(legs)) throw new Error("Le champ 'legs' doit être un tableau JSON.")
+  } catch (err) {
+    offerResult.innerHTML = `<p class="text-red-600">Erreur de format pour le champ 'legs' : ${err.message}</p>`
+    return
+  }
+
+  try {
+    const res = await axios.post("http://localhost:3000/offers", {
+      from, to, provider, price, currency, legs
+    })
+
+    offerResult.innerHTML = `
+      <h2 class="text-lg font-semibold text-yellow-700">Offre créée</h2>
+      <pre class="bg-gray-100 p-4 rounded text-sm">${JSON.stringify(res.data, null, 2)}</pre>
+    `
+    form.reset()
+  } catch (err) {
+    offerResult.innerHTML = `<p class="text-red-600">Erreur lors de la création de l'offre : ${err.message}</p>`
+  }
+}
+
+window.login = login
+window.loadOffers = loadOffers
+window.loadReco = loadReco
+window.addOffer = addOffer
